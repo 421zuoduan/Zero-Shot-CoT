@@ -17,3 +17,8 @@ pip install httpx==0.27.2
 export OPENAI_API_KEY=...
 ```
 
+运行程序
+
+```
+bash run_inference.sh
+```
