@@ -295,11 +295,12 @@ def setup_data_loader(args):
     return dataloader
 
 # ver 0.2
+# 清洗答案, 如果回答多个, 选择第一个 https://zhuanlan.zhihu.com/p/607856507
 def answer_cleansing(args, pred):
 
     print("pred_before : " + pred)
     
-    if args.method in ("few_shot", "few_shot_cot"):
+    if args.method in ("few_shot", "few_shot_cot", "contrast_cot"):
         preds = pred.split(args.direct_answer_trigger_for_fewshot)
         answer_flag = True if len(preds) > 1 else False 
         pred = preds[-1]
@@ -328,7 +329,7 @@ def answer_cleansing(args, pred):
     if len(pred) == 0:
         pred = ""
     else:
-        if args.method in ("few_shot", "few_shot_cot"):
+        if args.method in ("few_shot", "few_shot_cot", "contrast_cot"):
             if answer_flag:
                 # choose the first element in list ...
                 pred = pred[0]
@@ -350,7 +351,7 @@ def answer_cleansing(args, pred):
     
     return pred
 
-def create_demo_text(args, cot_flag):
+def create_demo_text(args, cot_flag, is_contrast=False):
     x, z, y = [], [], []
     
     # example sentences ...    
@@ -390,17 +391,59 @@ def create_demo_text(args, cot_flag):
     
     else:
         raise ValueError("dataset is not properly defined ...")
+    
+    if is_contrast:
+        # prompts are copied from "Towards Understanding Chain-of-Thought Prompting: An Empirical Study of What Matters", you can find prompts in the appendix of the paper
+        # contrast-cot 代码能不能不要放一半, 论文也没有附录, 看论文再找半天 prompt 跑对比实验真的很难受. 好想码完这些代码然后去码字, 歇了 :(
+            
+        wrong_explanation = []
+        wrong_answer = []
+        wrong_explanation.append("There are 21 - 15 = 6 trees originally. Then there were 15 trees after the Grove workers planted some more. So there must have been 21 trees that were planted.")
+        wrong_answer.append("21")
+        
+        wrong_explanation.append("There are originally 3 + 2 = 5 cars. Then 3 more cars arrive. Now 2 cars are in the parking lot")
+        wrong_answer.append("2")
+        
+        wrong_explanation.append("Originally, Leah had 32 + 42 = 74 chocolates and her sister had 32. So in total they had 74 - 35 = 39. After eating 35, they had 42 pieces left in total")
+        wrong_answer.append("42")
+        
+        wrong_explanation.append("Jason had 20 - 12 = 8 lollipops originally. Then he had 20 after giving some to Denny. So he gave Denny 12 lollipops")
+        wrong_answer.append("12")
+        
+        wrong_explanation.append("Shawn started with 5 toys. If he got 5 - 2 = 3 toys each from his mom and dad, then that is 6 more toys. 5 + 6 = 11.")
+        wrong_answer.append("11")
+        
+        wrong_explanation.append("There were originally 9 computers. For each of 4 days, 5 more computers were added. So 9 * 4 = 36 computers were added. 9 + 36 is 45.")
+        wrong_answer.append("45")
+        
+        wrong_explanation.append("Michael started with 58 golf balls. After losing 58 - 23 = 35 on tuesday, he had 58 - 35 = 23. After losing 2 more, he had 23 - 2 = 21 golf balls.")
+        wrong_answer.append("23")
+        
+        wrong_explanation.append("Olivia had 23 dollars. 5 bagels for 2 dollars each will be 5 x 2 = 10 dollars. So she has 23 - 10 dollars left. 23 - 10 is 13.")
+        wrong_answer.append("13")
         
     # randomize order of the examples ...
     index_list = list(range(len(x)))
     random.shuffle(index_list)
+    
+    # 输出x, z, y, wrong_explanation, wrong_answer 的长度
+    print("x: ", len(x))
+    print("z: ", len(z))
+    print("y: ", len(y))
+    print("wrong_explanation: ", len(wrong_explanation))
+    print("wrong_answer: ", len(wrong_answer))
 
     # Concatenate demonstration examples ...
     demo_text = ""
     for i in index_list:
-        if cot_flag:
+        if cot_flag and not is_contrast:
             demo_text += "Q: " + x[i] + "\nA: " + z[i] + " " + \
                          args.direct_answer_trigger_for_fewshot + " " + y[i] + ".\n\n"
+        elif cot_flag and is_contrast:
+            demo_text += "Question: " + x[i] + "\nExplanation: " + z[i] + " " + \
+                        args.direct_answer_trigger_for_fewshot + " " + y[i] + ".\n" + \
+                        "Wrong Explanation: " + wrong_explanation[i] + " " + \
+                        args.direct_answer_trigger_for_fewshot + " " + wrong_answer[i] + ".\n\n"
         else:
             demo_text += "Q: " + x[i] + "\nA: " + \
                          args.direct_answer_trigger_for_fewshot + " " + y[i] + ".\n\n"
