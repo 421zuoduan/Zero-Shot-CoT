@@ -66,19 +66,23 @@ def decoder_for_gpt3(args, input, max_length, i, k):
     
     # Specify engine ...
     # Instruct GPT3
-    if args.model == "gpt3":
-        engine = "text-ada-001"
-    elif args.model == "gpt3-medium":
-        engine = "text-babbage-001"
-    elif args.model == "gpt3-large":
-        engine = "text-curie-001"
-    elif args.model == "gpt3-xl":
-        engine = "text-davinci-002"
+    # if args.model == "gpt3":
+    #     engine = "text-ada-001"
+    # elif args.model == "gpt3-medium":
+    #     engine = "text-babbage-001"
+    # elif args.model == "gpt3-large":
+    #     engine = "text-curie-001"
+    # elif args.model == "gpt3-xl":
+    #     engine = "text-davinci-002"
+    if args.model == "gpt3.5-turbo":
+        engine = "gpt-3.5-turbo-0125"
     else:
         raise ValueError("model is not properly defined ...")
 
+    # Initialize the OpenAI client
+    api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(
-        api_key="sk-MBfJbLDXhrs79HLKJY4NibBNTdASup1l88FkaK9oMUFvVSun",
+        api_key=api_key,
         base_url="https://api.chatanywhere.tech/v1"
     )
 
@@ -94,8 +98,9 @@ def decoder_for_gpt3(args, input, max_length, i, k):
         ]
     )
 
-    # return response.choices[0].message.content
+    # # return response.choices[0].message.content
     return response.choices
+    # return response.choices[0].message.content
 
 
 class Decoder():
